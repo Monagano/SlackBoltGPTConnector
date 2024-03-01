@@ -62,7 +62,7 @@ Slack-BoltとOpenAI APIを統合して対話型Slackボットを実現します
 
 <!-- 言語、フレームワーク、ミドルウェア、インフラの一覧とバージョンを記載 -->
 まだ
-
+<!--
 | 言語・フレームワーク  | バージョン |
 | --------------------- | ---------- |
 | Python                | 3.11.4     |
@@ -74,7 +74,7 @@ Slack-BoltとOpenAI APIを統合して対話型Slackボットを実現します
 | Next.js               | 13.4.6     |
 | Terraform             | 1.3.6      |
 
-その他のパッケージのバージョンは pyproject.toml と package.json を参照してください
+その他のパッケージのバージョンは pyproject.toml と package.json を参照してください-->
 
 <p align="right">(<a href="#top">トップへ</a>)</p>
 
