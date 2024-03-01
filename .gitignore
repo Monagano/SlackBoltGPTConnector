@@ -1,0 +1,9 @@
+# venv
+.venv/
+
+# python cache
+*.pyc
+__pycache__/
+
+gpt_response_*.json
+slack_request_*.json
