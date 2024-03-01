@@ -1,5 +1,6 @@
 <div id="top"></div>
-## What's this?
+
+## これは何？
 Slack-BoltとOpenAI APIを統合して対話型Slackボットを実現します
 
 ## 使用技術一覧
