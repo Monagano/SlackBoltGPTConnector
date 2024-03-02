@@ -101,7 +101,7 @@ def write_text_to_file_with_timestamp(file_path, text, timestamp=False, encoding
         now = datetime.now().strftime('_%Y%m%d_%H%M%S')
         # タイムスタンプをファイル名に追加
         file_path = f"{base}{now}{ext}"
-
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     # テキストをutf-8でファイルに書き込み
     with open(file_path, 'w', encoding=encoding) as file:
         file.write(text)
@@ -121,8 +121,9 @@ def load_json_files(files: list[str], n: int, islast: bool = False) -> list[dict
     Returns:
         list[dict]: 読み込んだJSONファイルの内容を辞書に変換したリスト
     """
+    n = n if not islast else -n
     top_n_files_content = []
-    for file_path in (sorted(files)[-n:] if islast else sorted(files)[:n]):
+    for file_path in sorted(files)[n:]:
         with open(file_path, 'r', encoding='utf-8') as file:
             top_n_files_content.append(json.load(file))
     return top_n_files_content
