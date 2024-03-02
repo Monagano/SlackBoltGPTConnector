@@ -5,10 +5,15 @@ from datetime import datetime
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
+# ローカルではソケットモードが楽
+is_socket_mode = os.environ.get("USESOCKET", "YES") == "YES"
 # slackbotやopenapiのAPIキーはの環境変数に入れておいてね
 # ボットトークンとソケットモードハンドラーを使ってアプリを初期化
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+if is_socket_mode:
+    app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+else:
+    app = App(token=os.environ.get("SLACK_BOT_TOKEN"), signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
 
 
 current_sessions ={}
@@ -157,5 +162,9 @@ if __name__ == "__main__":
     else:
         # ファイルが存在しない場合、デフォルトの文字列はそのまま
         print("指定されたファイルは存在しません😭")
-    # とりあえずBoltのソケット開始！
-    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+    
+    if is_socket_mode:
+        # とりあえずBoltのソケット開始！
+        SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+    else:
+        app.start(port=int(os.environ.get("PORT", 8080)))
