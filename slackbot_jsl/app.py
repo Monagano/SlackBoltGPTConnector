@@ -1,6 +1,7 @@
 # coding: utf-8
 import os, json, datetime, glob, re
 import nest_of_utils as noutils
+import commonmarkslack, commonmark
 from chat_session_repo import chat_session_repo
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam, ChatCompletionSystemMessageParam
@@ -22,8 +23,9 @@ else:
 chat_repo = chat_session_repo(context_length = 8)
 # aiの振る舞いを記載したテキストファイルパス
 ai_instructions_file_path:str = os.environ.get("GPT_INSTRUCTIONS",'./slackbot_jsl/ai_instructions.md')
-# とりあえずAIへのデフォルト指示(フォールバック)を読み込んでおく
 ai_instructions:str = ""
+parser = commonmarkslack.Parser()
+renderer = commonmarkslack.SlackRenderer()
 
 @app.event("app_mention")
 def message_mention(body, say):
@@ -61,8 +63,12 @@ def handle_message(body, say):
     noutils.write_text_to_file_with_timestamp(
         f"./slackbot_jsl/history/{('' if isSucced else 'error_')}gpt_response_{slack_user_id}.json", 
         resp.model_dump_json(indent=2), True)
+    if isSucced:
+        # slackの特殊記法mrkdwnに対応
+        ast = parser.parse(resp.choices[0].message.content.strip())
+        slack_md = renderer.render(ast)
 
-    reply = resp.choices[0].message.content.strip() if isSucced else "申し訳ありません。openai-APIでエラーが発生しているようです。"
+    reply = slack_md if isSucced else "申し訳ありません。openai-APIでエラーが発生しているようです。"
     say(f"<@{slack_user_id}>\r\n{reply}")
 
 
