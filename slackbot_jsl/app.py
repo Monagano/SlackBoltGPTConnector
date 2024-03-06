@@ -1,11 +1,10 @@
 # coding: utf-8
-import os, json, datetime, glob, re
+import os, json, re
 import nest_of_utils as noutils
-import commonmarkslack, commonmark
+import commonmarkslack
 from chat_session_repo import chat_session_repo
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam, ChatCompletionSystemMessageParam
-from datetime import datetime
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
@@ -53,16 +52,24 @@ def handle_message(body, say):
     bot_id = body["authorizations"][0]["user_id"]
     slack_user_id = body['event']['user']
     user_message = re.sub(rf'<@{bot_id}>\s*', '', body["event"]["text"]) # メンションは消す。
-    print(json.dumps(body,indent=2))
-    resp = send_text_to_gpt(user_message, slack_user_id)
-    print(resp)
-    isSucced = resp.choices[0].finish_reason == "stop"
-    noutils.write_text_to_file_with_timestamp(
-        f"./slackbot_jsl/history/{('' if isSucced else 'error_')}slack_request_{slack_user_id}.json", 
-        json.dumps(body,indent=2), True)
-    noutils.write_text_to_file_with_timestamp(
-        f"./slackbot_jsl/history/{('' if isSucced else 'error_')}gpt_response_{slack_user_id}.json", 
-        resp.model_dump_json(indent=2), True)
+    print(json.dumps(body))
+    try:
+        resp = send_text_to_gpt(user_message, slack_user_id)
+        print(resp)
+        isSucced = resp.choices[0].finish_reason == "stop"
+        resp_dump = resp.model_dump_json(indent=2)
+    except Exception as e:
+        isSucced = False
+        resp_dump = json.dumps(e, indent=2)
+        return
+    finally:
+        noutils.write_text_to_file_with_timestamp(
+            f"./slackbot_jsl/history/{('' if isSucced else 'error_')}slack_request_{slack_user_id}.json", 
+            json.dumps(body,indent=2), True)
+        noutils.write_text_to_file_with_timestamp(
+            f"./slackbot_jsl/history/{('' if isSucced else 'error_')}gpt_response_{slack_user_id}.json", 
+            resp_dump, True)
+    
     if isSucced:
         # slackの特殊記法mrkdwnに対応
         ast = parser.parse(resp.choices[0].message.content.strip())
