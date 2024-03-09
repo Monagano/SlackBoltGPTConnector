@@ -1,0 +1,5 @@
+[*]
+charset = utf-8               # 文字コード
+end_of_line = lf              # 改行コード (lf, cr, crlf)
+indent_style = space          # インデントスタイル (space, tab)
+indent_size = 4               # インデントサイズ
