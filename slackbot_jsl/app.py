@@ -60,14 +60,11 @@ def  handle_action_file_choose(body, say):
     """
     slack_utils.handle_message(body, say)
 
-@app.action("button_click")
-def action_button_click(body, ack, say):
-    # Acknowledge the action
-    ack()
-    say(f"<@{body['user']['id']}> clicked the button")
-
 @api.post("/slack/events")
 async def endpoint(req: Request):
+    """
+    ここのエンドポイントでSlack Boltと連携する
+    """
     return await app_handler.handle(req)
 
 @api.get("/hogehoge")
