@@ -72,3 +72,5 @@ def read_all_text_from_file(file_path: str, encoding: str = "utf-8") -> tuple[bo
         print(f"エラーが発生しました: {e}")
         return False, ""
 
+def get_fname_without_ext(full_path:str) -> str:
+    return os.path.splitext(os.path.basename(full_path))[0]

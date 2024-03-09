@@ -37,8 +37,8 @@ class chat_session_repo:
         """
         print(os.getcwd())
         resList = [ ChatCompletionAssistantMessageParam(**noutils.filter_dic(res['choices'][0]['message'], ['role', 'content'])) for res 
-                in noutils.load_json_files(glob.glob(f'./slackbot_jsl/history/gpt_response_{user_id}*.json'), self.context_length // 2, islast=True)]
+                in noutils.load_json_files(glob.glob(f'./history/gpt_response_{user_id}*.json'), self.context_length // 2, islast=True)]
         reqList = [ ChatCompletionUserMessageParam(role="user", content=f"{req['event']['text']}") for req 
-                in noutils.load_json_files(glob.glob(f'./slackbot_jsl/history/slack_request_{user_id}*.json'), self.context_length // 2, islast=True)]
+                in noutils.load_json_files(glob.glob(f'./history/gpt_slack_request_{user_id}*.json'), self.context_length // 2, islast=True)]
         return [elem for pair in zip(reqList, resList) for elem in pair]
 
