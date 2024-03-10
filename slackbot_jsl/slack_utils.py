@@ -1,4 +1,4 @@
-import logging, os, json, re
+import logging, os, json, re, traceback
 import storage_utils, gpt_utils
 import nest_of_utils as nou
 from dataclasses import dataclass
@@ -20,42 +20,34 @@ class FwSlackMsgState:
     slack_action: dict | None
     mode: str = "normal"
     isGptAction: bool = True
-    resp_message: str = ""
 
 def handle_message(body, say):
     """
     Slackからのメッセージを処理し、OpenAI GPTへの問い合わせとその応答を行います。
     """
     print(json.dumps(body))
-    user_id = ""
-    if "event" in body:
-        if 'user' in body['event']:
-            user_id = body['event']['user']
-        elif 'message' in body['event'] and 'user' in body['event']['message']:
-            user_id = body['event']['message']['user']
-    elif "user" in body and "id" in body["user"]:
-        user_id = body["user"]["id"]
-
+    user_id = get_user_id_from_body(body)
     state:FwSlackMsgState | None = None
     is_error = False
     try:
+        # 要求を解析
         state = build_state(user_id=user_id, body=body)
 
         # GPT連携ならリクエストして結果を応答に仮セット
-        if state.isGptAction:
-            state.resp_message = request_gpt_with_state(state=state)
+        gpt_resp = request_gpt_with_state(state=state) if state.isGptAction else None
 
         # 応答送信
         if state.mode == "get_single_file":
             # GPTに作って貰ってた場合を考慮
-            blocks = [get_file_message_block(state.resp_message if state.isGptAction else state.user_message)]
+            blocks = [get_file_message_block(gpt_resp or state.user_message)]
         elif state.mode == "get_filelist":
-            blocks=make_filelist_message_blocks(state.resp_message if state.isGptAction else state.user_message)
+            blocks = make_filelist_message_blocks(gpt_resp or state.user_message)
         else:
-            blocks=[make_dafault_block(f"<@{state.user_id}>\r\n{state.resp_message}")]
+            blocks = [make_dafault_block(f"<@{state.user_id}>\r\n{gpt_resp}")]
         say(blocks=blocks)
     except Exception as e:
         print(e)
+        traceback.print_exc()
         # TODO キャラクター設定ごとに用意
         say(("<@" + user_id + ">\r\n" if user_id else "")
             + '申し訳ございません。何らかのエラーが発生しました。管理者に問い合わせてくださいなお、チャットの編集やファイルアップロードにはまだ対応しておりません。')
@@ -135,7 +127,8 @@ def get_file_permalink(upload_file_name:str) -> str:
 
 def get_file_message_block(upload_file_name:str) -> dict:
     permalink = get_file_permalink(upload_file_name)
-    block = make_dafault_block(f"要求されたファイル: <{permalink}|{upload_file_name}>") | make_button_dict_rapped("ファイル一覧はこちら", "get_filelist", "提供ファイル一覧")
+    block = make_dafault_block(f"要求されたファイル: <{permalink}|{upload_file_name}>") 
+    block |= make_button_dict_rapped("ファイル一覧はこちら", "get_filelist", "提供ファイル一覧")
     return block
 
 def make_filelist_message_blocks(intro_message:str) -> list[dict[str, any]]:
@@ -166,6 +159,16 @@ def make_button_dict_rapped(button_text:str, action_id:str, value:str) -> dict:
         }
     }
 
+def get_user_id_from_body(body:dict) -> str:
+    if "event" in body:
+        event = body['event']
+        if 'user' in event:
+            return event['user']
+        elif 'message' in event and 'user' in event['message']:
+            return event['message']['user']
+    elif "user" in body and "id" in body["user"]:
+        return body["user"]["id"]
+    return ""
 
 # アプリを起動します
 if __name__ == "__main__":

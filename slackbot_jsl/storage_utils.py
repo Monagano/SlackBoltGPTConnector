@@ -14,11 +14,11 @@ def __get_bucket() -> gcs.Bucket:
     return client.bucket(env_dict["GCP_CS_BUKT_SLACK"])
 
 def get_file_list() -> dict[str, Blob]:
-    bucket = __get_bucket()
-    return {blob.name: blob for blob in bucket.list_blobs()}
+    blobs:list[Blob] = __get_bucket().list_blobs()
+    return {blob.name: blob for blob in blobs if blob.size != 0}
 
 def get_filename_list() -> list[str]:
-    return [blob.name for blob in __get_bucket().list_blobs()]
+    return list(get_file_list().keys())
 
 def get_file(blob_name:str) -> bytes:
     blob_dict = get_file_list()
