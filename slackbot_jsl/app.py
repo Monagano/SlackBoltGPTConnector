@@ -53,11 +53,12 @@ def handle_message_events(body, say):
     """
     slack_utils.handle_message(body, say)
 
-@app.action("file_choose")
-def  handle_action_file_choose(body, say):
+@app.action(re.compile(".+"))
+def  handle_action_file_choose(body, ack, say):
     """
     ファイル選択アクション受信時の処理。
     """
+    ack()
     slack_utils.handle_message(body, say)
 
 @api.post("/slack/events")

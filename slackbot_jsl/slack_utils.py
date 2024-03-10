@@ -48,11 +48,12 @@ def handle_message(body, say):
         # 応答送信
         if state.mode == "get_single_file":
             # GPTに作って貰ってた場合を考慮
-            state.resp_message = get_file_message(state.resp_message if state.isGptAction else state.user_message)
-        if state.mode == "get_filelist":
-            say(blocks=make_filelist_message(state.resp_message))
+            blocks = [get_file_message_block(state.resp_message if state.isGptAction else state.user_message)]
+        elif state.mode == "get_filelist":
+            blocks=make_filelist_message_blocks(state.resp_message if state.isGptAction else state.user_message)
         else:
-            say(f"<@{state.user_id}>\r\n{state.resp_message}")
+            blocks=[make_dafault_block(f"<@{state.user_id}>\r\n{state.resp_message}")]
+        say(blocks=blocks)
     except Exception as e:
         print(e)
         # TODO キャラクター設定ごとに用意
@@ -62,7 +63,7 @@ def handle_message(body, say):
     finally:
         req_log_name = 'error_' if is_error else ''
         req_log_name += 'gpt_' if state and state.isGptAction else ''
-        req_log_name += f'slack_request_{body["event"]["user"]}.json'
+        req_log_name += f'slack_request_{user_id}.json'
         # 成否問わず、リクエストをロギング
         nou.write_text_to_file_with_timestamp(f"./history//{req_log_name}", json.dumps(body,indent=2), True)
 
@@ -81,6 +82,7 @@ def request_gpt_with_state(state:FwSlackMsgState) -> str:
         is_error = True
         raise
     finally:
+        print(resp_dump)
         nou.write_text_to_file_with_timestamp(
             f"./history/{('error_' if is_error else '')}gpt_response_{state.user_id}.json", resp_dump, True)
 
@@ -95,11 +97,9 @@ def build_state(user_id:str, body:dict) -> FwSlackMsgState:
 
     if state.slack_action:
         state.isGptAction = False
-        if state.slack_action["action_id"] == "file_choose":
-            state.mode = "get_single_file"
-
-    elif any(keyword in state.user_message for keyword in ['社内フォーマット', '社内文書', '手続き書類', '手続書類', '社内様式', '社内書式']):
-        if any(keyword in state.user_message for keyword in ['一覧で', '一覧を表示', 'リスト表示', 'リストで', 'ファイル一覧', '一覧化']):
+        state.mode = state.slack_action["action_id"]
+    elif any(keyword in state.user_message for keyword in ['社内フォーマット', '社内文書', '手続き書類', '手続書類', '社内様式', '社内書式', '社内ファイル']):
+        if any(keyword in state.user_message for keyword in ['一覧で', '一覧を表示', 'リスト表示', 'リストで', 'ファイル一覧', '一覧化', '一覧見せて', '一覧を','社内ファイル一覧']):
             state.mode = "get_filelist"
             state.user_message = body["event"]["text"] = gpt_utils.mkmsg_file_choose()
         else:
@@ -133,36 +133,39 @@ def get_file_permalink(upload_file_name:str) -> str:
 
     return target_file["permalink"]
 
-def get_file_message(upload_file_name:str) -> str:
+def get_file_message_block(upload_file_name:str) -> dict:
     permalink = get_file_permalink(upload_file_name)
-    return f"要求されたファイル: <{permalink}|{upload_file_name}>"
+    block = make_dafault_block(f"要求されたファイル: <{permalink}|{upload_file_name}>") | make_button_dict_rapped("ファイル一覧はこちら", "get_filelist", "提供ファイル一覧")
+    return block
 
-def make_filelist_message(intro_message:str) -> list[dict[str, any]]:
-    blocks=[
-		{
+def make_filelist_message_blocks(intro_message:str) -> list[dict[str, any]]:
+    blocks=[make_dafault_block(f"*{intro_message}*")]
+    blocks += [make_dafault_block(f"*{fname}*") | make_button_dict_rapped("選択", "get_single_file", f"{fname}")
+         for fname in storage_utils.get_filename_list()]
+    return blocks
+
+def make_dafault_block(message:str) -> dict:
+    return {
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": f"*{intro_message}*"
+				"text": message
 			}
-		}]
-    blocks += [{
-        "type": "section",
-        "text": {
-            "type": "mrkdwn",
-            "text": f"*{fname}*"
-        },
+		}
+
+def make_button_dict_rapped(button_text:str, action_id:str, value:str) -> dict:
+    return {
         "accessory": {
             "type": "button",
             "text": {
                 "type": "plain_text",
-                "text": "選択"
+                "text": button_text
             },
-            "action_id": "file_choose",
-            "value": f"{fname}"
+            "action_id": action_id,
+            "value": value
         }
-    } for fname in storage_utils.get_filename_list()]
-    return blocks
+    }
+
 
 # アプリを起動します
 if __name__ == "__main__":

@@ -14,5 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ENV SLACK_BOT_TOKEN=your-token
 # ENV OPENAI_API_KEY=your-api-key
 
+WORKDIR /app/slackbot_jsl
+
 # アプリケーションを実行
-CMD ["python", "./slackbot_jsl/app.py"]
+CMD ["uvicorn", "app:api", "--host", "0.0.0.0", "--port", "8080"]
