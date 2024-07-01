@@ -91,7 +91,7 @@ def build_state(user_id:str, body:dict) -> FwSlackMsgState:
         state.isGptAction = False
         state.mode = state.slack_action["action_id"]
     elif any(keyword in state.user_message for keyword in ['社内フォーマット', '社内文書', '手続き書類', '手続書類', '社内様式', '社内書式', '社内ファイル']):
-        if any(keyword in state.user_message for keyword in ['一覧で', '一覧を表示', 'リスト表示', 'リストで', 'ファイル一覧', '一覧化', '一覧見せて', '一覧を','社内ファイル一覧']):
+        if any(keyword in state.user_message for keyword in ['一覧で', '一覧を表示', 'リスト表示', 'リストで', 'ファイル一覧', '一覧化', '一覧見せて', '一覧を','フォーマット一覧', '文書一覧']):
             state.mode = "get_filelist"
             state.user_message = body["event"]["text"] = gpt_utils.mkmsg_file_choose()
         else:
