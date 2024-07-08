@@ -9,7 +9,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt.adapter.fastapi import SlackRequestHandler
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-
+import socket_mode_app as sock
 def terminate_process(proc):
     proc.terminate()  # 子プロセスを終了させる
     proc.wait()       # 子プロセスの終了を待つ
@@ -24,12 +24,16 @@ is_socket_mode = os.environ.get("USESOCKET", "YES") == "YES"
 #     signal.signal(signal.SIGINT, lambda signum, frame: terminate_process(proc))
 #     signal.signal(signal.SIGTERM, lambda signum, frame: terminate_process(proc))
 
-# ローカルの時は実際には使われないけど、関数定義のためにインスタンスを作るよ
-# slackbotやopenapiのAPIキーはの環境変数に入れておいてね
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"), signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
-app_handler = SlackRequestHandler(app) # FastAPI統合
 
-api = FastAPI()
+if is_socket_mode:
+    sock.endpoint()
+else:
+    # ローカルの時は実際には使われないけど、関数定義のためにインスタンスを作るよ
+    # slackbotやopenapiのAPIキーはの環境変数に入れておいてね
+    app = App(token=os.environ.get("SLACK_BOT_TOKEN"), signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
+    app_handler = SlackRequestHandler(app) # FastAPI統合
+
+    api = FastAPI()
 
 @app.middleware
 def skip_retry(logger, request, next):

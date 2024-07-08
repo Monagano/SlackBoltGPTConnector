@@ -30,6 +30,12 @@ def handle_message_events(body, say):
     """
     slack_utils.handle_message(body, say)
 
+def endpoint():
+    '''
+    ローカルデバッグ用
+    '''
+    SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
+
 # アプリを起動します
 if __name__ == "__main__":
     SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"]).start()
